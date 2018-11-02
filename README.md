@@ -12,17 +12,18 @@ Rocks and configurations for different Lua versions are stored differently.
 
 ## Requirements
 
-**`wget` `make` `libreadline-dev`
+**`wget` `make` `libreadline-dev`**
 
-`lib32ncurses5-dev`**: for 32-bit (earlier) versions of Lua on 64 bit machines.
+**`lib32ncurses5-dev`** -
+for 32-bit (earlier) versions of Lua on 64 bit machines.
 
-**`liblua5.3-dev` `liblua5.2-dev` `liblua5.1.0-dev` `liblua50-dev`**, depending
-on the Lua version used for compiling `LuaJIT`.
+**`liblua5.3-dev` `liblua5.2-dev` `liblua5.1.0-dev` `liblua50-dev`** -
+depending on the Lua version used for compiling `LuaJIT`.
 
 ## Installation
 
 ```sh
-wget -qO- https://gitlab.com/pepa65/luavm/raw/master/luavm-install |bash
+wget -qO- https://gitlab.com/pepa65/luavm/raw/master/install-luavm |bash
 ```
 
 ## Usage
