@@ -3,7 +3,7 @@
 # luavm - Lua Version Manager
 # Required: coreutils(cat type rm) wget tar
 
-Version=0.1 Arch=linux Luavm="$HOME/.luavm"  # Directory tree for luavm
+Version=0.11 Arch=linux Luavm="$HOME/.luavm"  # Directory tree for luavm
 
 Usage(){
 	cat <<-EOT
@@ -12,8 +12,7 @@ Usage(){
 		  luavm install|use|uninstall lua|luarocks|luajit-<version>
 		    Installs/Uses/Uninstalls the given version of lua/luarocks/luajit.
 		  luavm list|current [lua|luarocks|luajit]
-		    List all installed lua/luarocks/luajit versions or
-		      list current lua/luarocks/luajit versions.
+		    List all Installed/Current lua/luarocks/luajit versions.
 			luavm version  - Show the luavm version.
 		  luavm [help]   - Show this help text.
 		
