@@ -24,7 +24,7 @@ Install(){
 	[[ $shell = bash && -f $HOME/.bashrc ]] && profile="$HOME/.bashrc"
 	[[ $shell = zsh && -f $HOME/.zshrc ]] && profile="$HOME/.zshrc"
 	[[ -z $profile ]] &&
-		Print "'$Bin' needs to be added to PATH."
+		Print "'$Bin' needs to be added to PATH." &&
 		Print "No profiles found (~/.bashrc or ~/.zshrc) to modify..." &&
 		Print "This line needs to be added manually to the right file:" &&
 		Print "  $str"
