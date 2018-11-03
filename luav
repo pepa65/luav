@@ -375,7 +375,9 @@ Do_uninstall_jit(){ # $1:ver
 }
 
 Do_list_lua(){
-	installed_vers=$(ls -1 $Lua)
+	local installed_vers=$(ls -1 $Lua)
+	[[ -z $installed_vers ]] && Print "No lua versions installed" &&
+		return
 	Get_lua_ver
 	for ver in $installed_vers
 	do
@@ -387,6 +389,8 @@ Do_list_lua(){
 
 Do_list_rocks(){
 	local installed_vers=$(ls -1 $Rocks)
+	[[ -z $installed_vers ]] && Print "No luarocks versions installed" &&
+		return
 	Get_rocks_ver
 	for ver in $installed_vers
 	do
@@ -399,7 +403,9 @@ Do_list_rocks(){
 }
 
 Do_list_jit(){
-	installed_vers=$(ls -1 $Jit)
+	local installed_vers=$(ls -1 $Jit)
+	[[ -z $installed_vers ]] && Print "No LuaJIT versions installed" &&
+		return
 	Get_jit_ver
 	for ver in $installed_vers
 	do
@@ -429,7 +435,7 @@ Jitv=' 103 110 112 113 114 115 116 117 118 200 201 202 203 204 205 '
 Rocksv=' 031 032 041 042 043 051 052 101 201 202 203 204 205 206 207 208 209 210 211 212 220 221 222 230 240 241 242 243 244 300 301 302 303 304 '
 case $1 in
 	install|use|uninstall) [[ $2 ]] ||
-			Error "Missing argument: lua|luarocks|luajit-<version>"
+			Error "Missing argument: lua|[lua]rocks|[lua]jit-<version>"
 		c=${2%%-*}
 		[[ $c = lua || $c = luarocks || $c = luajit || $c = rocks || $c = jit ]] ||
 			Error "Argument '$2' must start with lua- / [lua]rocks- / [lua]jit-"
@@ -441,7 +447,7 @@ case $1 in
 		Do_$1_$c "$n" ;;
 	all|list|current) [[ -z $2 || $2 = lua || $2 = luarocks || $2 = luajit || \
 				$2 = rocks || $2 = jit ]] ||
-			Error "Argument '$2' must be empty or lua / [lua]rocks / [lua]jit"
+			Error "Argument '$2' must be empty or: lua / [lua]rocks / [lua]jit"
 		c=$2
 		[[ $c = luarocks ]] && c=rocks
 		[[ $c = luajit ]] && c=jit
