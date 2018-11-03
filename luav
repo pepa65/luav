@@ -8,7 +8,7 @@ Ver=0.14 Arch=linux Luav="$HOME/.luav"  # Directory tree for luav
 
 Usage(){
 	cat <<-EOT
-		luav - Lua version manager
+		luav-$Ver - Lua version manager
 		Usage:  luav <command> [<component>[-<version>]]
 		            component:  lua | [lua]jit | [lua]rocks
 		            version:    n.n.n (n=0..9)
@@ -28,30 +28,30 @@ Usage(){
 		  luav install lua-5.1.5             Install latest version of lua 5.1
 		  luav install luarocks-3.0.4        Install latest luarocks version
 		  luav install luajit-2.0.5          Install latest luajit version
+		Directory tree for luav: $Luav
 	EOT
 }
 
 Error(){ echo -e "\e[1m\e[31m$1\n\e[0m" 1>&2; exit 1;}
 Print(){ echo -e "\e[1m  $1\e[0m";}
 Exists(){ type "$1" &>/dev/null || Error "'$1' must be installed";}
-Exec_command(){ eval $1; (($?)) && Error "ABORT: unable to execute '$1'";}
+Exec_command(){ eval $1; (($?)) && Error "ABORT: error in executing '$1'";}
 
 Download(){ # $1:url
 	Print "Downloading from $1"
 	Exists wget
-	Exec_command "wget '$1'"
+	Exec_command "wget -q '$1'"
 	Print "Download successful"
 }
 
 Unpack(){ # $1:archive
 	Print "Unpacking $1"
 	Exists tar
-	Exec_command "tar xvf '$1'"
+	Exec_command "tar xf '$1'"
 	Print "Unpack successful"
 }
 
-Download_unpack(){ # $1:dir $2:archive $3:url
-	#Print "Detecting already downloaded archives"
+Download_unpack(){ # $1:name $2:archive $3:url
 	if [[ -e $1 ]]
 	then
 		read -rn1 -p "'$1' already downloaded, download anew? [y/N] "
@@ -61,7 +61,7 @@ Download_unpack(){ # $1:dir $2:archive $3:url
 	if [[ ! -e $1 ]]
 	then # Downloading the archive only if it does not exist
 		Print "Downloading $1"
-		Download "$3"
+		Download "$3/$2"
 		Print "Extracting $2"
 		Unpack "$2"
 		Exec_command "rm '$2'"
@@ -77,12 +77,11 @@ Uninstall(){ # $1:name $2:path $3:dir
 }
 
 Get_arch(){
-	local -l arch=$(uname)
-	local archs="aix bsd c89 freebsd generic linux macosx mingw posix solaris"
+	local -l arch=$(uname) a
 	Print "Detecting architecture"
-	for a in $archs
+	for a in $Archs
 	do
-		[[ $arch = $a ]] && Print "Architecture detected: $a" && Arch=$a &&
+		[[ $a = $arch ]] && Print "Architecture detected: $a" && Arch=$a &&
 			return 0
 	done
 	Print "Unable to detect architecture, using default: $Arch"
@@ -107,11 +106,10 @@ Get_jit_ver(){
 }
 
 Do_list_lua(){
-	local installed_vers=$(ls -1 $Lua)
-	[[ -z $installed_vers ]] && Print "No lua versions installed" &&
-		return
+	local vers=$(ls -1 $Lua) ver
+	[[ -z $vers ]] && Print "No lua versions installed" && return
 	Get_lua_ver
-	for ver in $installed_vers
+	for ver in $vers
 	do
 		[[ $ver = $Lua_ver ]] &&
 			Print "lua-$ver <--current" ||
@@ -120,14 +118,12 @@ Do_list_lua(){
 }
 
 Do_list_rocks(){
-	local installed_vers=$(ls -1 $Rocks)
-	[[ -z $installed_vers ]] && Print "No luarocks versions installed" &&
-		return
+	local vers=$(ls -1 $Rocks) ver rocks lua
+	[[ -z $vers ]] && Print "No luarocks versions installed" && return
 	Get_rocks_ver
-	for ver in $installed_vers
+	for ver in $vers
 	do
-		local rocks=${ver%_*}
-		local lua=${ver#*_}
+		rocks=${ver%_*} lua=${ver#*_}
 		[[ $rocks = $Rocks_ver && $lua = $Lua_rver ]] &&
 			Print "luarocks-$rocks (lua version: $lua) <--current" ||
 			Print "luarocks-$rocks (lua version: $lua)"
@@ -135,11 +131,11 @@ Do_list_rocks(){
 }
 
 Do_list_jit(){
-	local installed_vers=$(ls -1 $Jit)
-	[[ -z $installed_vers ]] && Print "No LuaJIT versions installed" &&
+	local vers=$(ls -1 $Jit) ver
+	[[ -z $vers ]] && Print "No LuaJIT versions installed" &&
 		return
 	Get_jit_ver
-	for ver in $installed_vers
+	for ver in $vers
 	do
 		[[ $ver = $Jit_ver ]] &&
 			Print "LuaJIT-$ver <--current" ||
@@ -150,7 +146,7 @@ Do_list_jit(){
 Do_current_lua(){
 	Get_lua_ver
 	[[ $Lua_ver ]] && Print "lua-$Lua_ver" ||
-		 Print "No lua versions installed"
+		Print "No lua versions installed"
 }
 
 Do_current_rocks(){
@@ -166,41 +162,44 @@ Do_current_jit(){
 }
 
 Do_all_lua(){
+	local n
 	Print "All known lua verion:"
 	for n in $Luav
 	do echo -n "${n:0:1}.${n:1:1}.${n:2:1}  "
 	done
-	echo
+	[[ $n ]] && echo
 	read -rn1 -p "Search for newer versions online? [y/N] "
 	[[ $REPLY ]] && echo
 	[[ $REPLY =~ ^[yY]$ ]] && Get_more_lua
 }
 
 Do_all_rocks(){
+	local n
 	Print "All known luarocks versions:"
 	for n in $Rocksv
 	do echo -n "${n:0:1}.${n:1:1}.${n:2:1}  "
 	done
-	echo
+	[[ $n ]] && echo
 	read -rn1 -p "Search for newer versions online? [y/N] "
 	[[ $REPLY ]] && echo
 	[[ $REPLY =~ ^[yY]$ ]] && Get_more_rocks
 }
 
 Do_all_jit(){
+	local n
 	Print "All known LuaJIT versions:"
 	for n in $Jitv
 	do echo -n "${n:0:1}.${n:1:1}.${n:2:1}  "
 	done
-	echo
+	[[ $n ]] && echo
 	read -rn1 -p "Search for newer versions online? [y/N] "
 	[[ $REPLY ]] && echo
 	[[ $REPLY =~ ^[yY]$ ]] && Get_more_jit
 }
 
 Get_more_lua(){ # $1:download
-	cd "$Src"
 	local n=${Luav: -4:3} name v more=
+	cd "$Src"
 	while ((n++<999))
 	do
 		v="${n:0:1}.${n:1:1}.${n:2:1}" name="lua-$v"
@@ -214,12 +213,12 @@ Get_more_lua(){ # $1:download
 		more+="$n "
 		echo -n "$v  "
 	done
-	[[ $more ]] && Luav+=$more && echo || Print "No more"
+	[[ $more ]] && echo && Luav+=$more || Print "No more"
 }
 
 Get_more_rocks(){ # $1:download
-	cd "$Src"
 	local n=${Rocksv: -4:3} name v more=
+	cd "$Src"
 	while ((n++<999))
 	do
 		v="${n:0:1}.${n:1:1}.${n:2:1}" name="luarocks-$v"
@@ -233,12 +232,12 @@ Get_more_rocks(){ # $1:download
 		more+="$n "
 		echo -n "$v  "
 	done
-	[[ $more ]] && Rocksv+=$more && echo || Print "No more"
+	[[ $more ]] && echo && Rocksv+=$more || Print "No more"
 }
 
 Get_more_jit(){ # $1:download
-	cd "$Src"
 	local n=${Jitv: -4:3} name v more=
+	cd "$Src"
 	while ((n++<999))
 	do
 		v="${n:0:1}.${n:1:1}.${n:2:1}" name="LuaJIT-$v"
@@ -252,36 +251,36 @@ Get_more_jit(){ # $1:download
 		more+="$n "
 		echo -n "$v  "
 	done
-	[[ $more ]] && Jitv+=$more && echo || Print "No more"
+	[[ $more ]] && echo && Jitv+=$more || Print "No more"
 }
 
 Do_install_lua(){ # $1:version
-	local dir="lua-$1" archive="$dir.tar.gz" url="$urllua/$archive"
-	Print "Installing $dir"
+	local name="lua-$1"
+	Print "Installing $name"
 	Exec_command "cd '$Src'"
-	Download_unpack "$dir" "$archive" "$url"
+	Download_unpack "$name" "$name.tar.gz" "$urllua"
 	Get_arch
-	Exec_command "cd '$dir'"
-	Print "Compiling $dir (needs package !)"
+	Exec_command "cd '$name'"
+	Print "Compiling $name (needs package liblua${1:2:3}-dev!)"
 	Exec_command "make $Arch install INSTALL_TOP=$Lua/$1/"
-	read -rn1 -p "'$dir' successfully installed. Use this version? [Y/n] "
+	read -rn1 -p "$name successfully installed. Use this version? [Y/n] "
 	[[ $REPLY ]] && echo
 	[[ $REPLY =~ ^[nN]$ ]] || Do_use_lua $1
 }
 
-Do_install_rocks(){ # $1:ver
+Do_install_rocks(){ # $1:version
+	local name="luarocks-$1"
 	Get_lua_ver
 	[[ $Lua_ver ]] || Error "No lua version set, install lua first"
-	local dir="luarocks-$1" archive="$dir.tar.gz" url="$urocks/$archive"
-	Print "Installing $dir for lua $Lua_sver"
+	Print "Installing $name for lua $Lua_sver"
 	Exec_command "cd '$Src'"
 	mkdir -p "$Inc"
 	[[ ! -e "$Inc/lua$Lua_sver" ]] &&
 		! ln -s "/usr/include/lua$Lua_sver" "$Inc/" &&
 		Error "Can't link the header files of Lua $Lua_sver"
-	Download_unpack "$dir" "$archive" "$url"
-	Exec_command "cd '$dir'"
-	Print "Compiling $dir"
+	Download_unpack "$name" "$name.tar.gz" "$urlrocks"
+	Exec_command "cd '$name'"
+	Print "Compiling $name"
 	Exec_command "./configure --prefix=$Rocks/$1_$Lua_sver
 			--with-lua=$Lua/$Lua_ver
 			--with-lua-bin=$Lua/$Lua_ver/bin
@@ -290,26 +289,26 @@ Do_install_rocks(){ # $1:ver
 			--versioned-rocks-dir"
 	Exec_command "make build"
 	Exec_command "make install"
-	read -rn1 -p "'$dir' successfully installed. Use? [Y/n] "
+	read -rn1 -p "$name successfully installed. Use this version? [Y/n] "
 	[[ $REPLY ]] && echo
 	[[ $REPLY =~ ^[nN]$ ]] || Do_use_rocks $1
 }
 
-Do_install_jit(){ # $1:ver
-	local dir="LuaJIT-$1" archive="$dir.tar.gz" url="$uluajit/$archive"
-	Print "Installing $dir"
+Do_install_jit(){ # $1:version
+	local name="LuaJIT-$1"
+	Print "Installing $name"
 	Exec_command "cd '$Src'"
-	Download_unpack "$dir" "$archive" "$url"
-	Exec_command "cd '$dir'"
-	Print "Compiling $dir"
+	Download_unpack "$name" "$name.tar.gz" "$urljit"
+	Exec_command "cd '$name'"
+	Print "Compiling $name"
 	Exec_command "make PREFIX=$Jit/$1"
 	Exec_command "make install PREFIX=$Jit/$1"
-	read -rn1 -p "'$dir' successfully installed. Use this version? [Y/n] "
+	read -rn1 -p "$name successfully installed. Use this version? [Y/n] "
 	[[ $REPLY ]] && echo
 	[[ $REPLY =~ ^[nN]$ ]] || Do_use_jit $1
 }
 
-Do_use_lua(){ # $1:ver
+Do_use_lua(){ # $1:version
 	local name="lua-$1"
 	Print "Starting to use $name"
 	Exec_command "cd $Lua"
@@ -342,7 +341,7 @@ Do_use_lua(){ # $1:ver
 	fi
 }
 
-Do_use_rocks(){ # $1:ver
+Do_use_rocks(){ # $1:version
 	local name="luarocks-$1"
 	Get_lua_ver
 	Print "Using $name with lua $Lua_sver"
@@ -363,7 +362,7 @@ Do_use_rocks(){ # $1:ver
 	Print "Successfully using $name now"
 }
 
-Do_use_jit(){ # $1:ver
+Do_use_jit(){ # $1:version
 	local name="LuaJIT-$1"
 	Print "Using $name"
 	Exec_command "cd '$Jit'"
@@ -381,7 +380,7 @@ Do_use_jit(){ # $1:ver
 	Print "Successfully using $name now"
 }
 
-Do_uninstall_lua(){ # $1:ver
+Do_uninstall_lua(){ # $1:version
 	local name="lua-$1"
 	Get_lua_ver
 	Uninstall "$name" "$Lua" "$Lua_ver"
@@ -393,7 +392,7 @@ Do_uninstall_lua(){ # $1:ver
 	fi
 }
 
-Do_uninstall_rocks(){ # $1:ver
+Do_uninstall_rocks(){ # $1:version
 	local name="luarocks-$1"
 	Get_lua_ver
 	Get_rocks_ver
@@ -407,7 +406,7 @@ Do_uninstall_rocks(){ # $1:ver
 	fi
 }
 
-Do_uninstall_jit(){ # $1:ver
+Do_uninstall_jit(){ # $1:version
 	local name="LuaJIT-$1"
 	Get_jit_ver
 	Uninstall "$name" "$Jit" "$1"
@@ -418,8 +417,18 @@ Do_uninstall_jit(){ # $1:ver
 	fi
 }
 
-# Main
+# Download urls
+urllua='http://www.lua.org/ftp'
+urljit='http://luajit.org/download'
+urlrocks='http://luarocks.org/releases'
 
+# Known versions
+Luav=' 321 322 401 501 502 503 511 512 513 514 515 520 521 522 523 524 530 531 532 533 534 535 '
+Jitv=' 103 110 112 113 114 115 116 117 118 200 201 202 203 204 205 '
+Rocksv=' 031 032 041 042 043 051 052 101 201 202 203 204 205 206 207 208 209 210 211 212 220 221 222 230 240 241 242 243 244 300 301 302 303 304 '
+Archs='aix bsd c89 freebsd generic linux macosx mingw posix solaris'
+
+# Directory tree
 Src="$Luav/src"  # Source code dir
 Bin="$Luav/bin"  # Binary/link dir
 Lua="$Luav/lua"  # Build dir for lua
@@ -428,14 +437,9 @@ Jit="$Luav/luajit"  # Build dir for luajit
 Inc="$Luav/include"  # Include dir
 mkdir -p "$Src" "$Lua" "$Jit" "$Rocks" "$Bin"
 
-urllua='http://www.lua.org/ftp'
-urljit='http://luajit.org/download'
-urlrocks='http://luarocks.org/releases'
+# Version globals
 Lua_ver= Lua_sver= Lua_rver= Jit_ver= Rocks_ver=
-# Known versions
-Luav=' 321 322 401 501 502 503 511 512 513 514 515 520 521 522 523 524 530 531 532 533 534 535 '
-Jitv=' 103 110 112 113 114 115 116 117 118 200 201 202 203 204 205 '
-Rocksv=' 031 032 041 042 043 051 052 101 201 202 203 204 205 206 207 208 209 210 211 212 220 221 222 230 240 241 242 243 244 300 301 302 303 304 '
+
 case $1 in
 	install|use|uninstall) [[ $2 ]] ||
 			Error "Missing argument: lua|[lua]rocks|[lua]jit-<version>"
