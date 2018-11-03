@@ -16,7 +16,7 @@ Install(){
 	Print "Downloading $Program..."
 	cd "$Bin"
 	[[ -e $Program ]] && Print "Removing existing $Program..." && rm "$Program"
-	wget "$Rawrepo/$Program"
+	wget -q "$Rawrepo/$Program"
 	chmod 775 "$Program"
 
 	# Add luav to path

@@ -106,19 +106,63 @@ Get_jit_ver(){
 	ver=${ver#$Jit/} Jit_ver=${ver%/bin/luajit}
 }
 
+Do_list_lua(){
+	local installed_vers=$(ls -1 $Lua)
+	[[ -z $installed_vers ]] && Print "No lua versions installed" &&
+		return
+	Get_lua_ver
+	for ver in $installed_vers
+	do
+		[[ $ver = $Lua_ver ]] &&
+			Print "lua-$ver <--current" ||
+			Print "lua-$ver"
+	done
+}
+
+Do_list_rocks(){
+	local installed_vers=$(ls -1 $Rocks)
+	[[ -z $installed_vers ]] && Print "No luarocks versions installed" &&
+		return
+	Get_rocks_ver
+	for ver in $installed_vers
+	do
+		local rocks=${ver%_*}
+		local lua=${ver#*_}
+		[[ $rocks = $Rocks_ver && $lua = $Lua_rver ]] &&
+			Print "luarocks-$rocks (lua version: $lua) <--current" ||
+			Print "luarocks-$rocks (lua version: $lua)"
+	done
+}
+
+Do_list_jit(){
+	local installed_vers=$(ls -1 $Jit)
+	[[ -z $installed_vers ]] && Print "No LuaJIT versions installed" &&
+		return
+	Get_jit_ver
+	for ver in $installed_vers
+	do
+		[[ $ver = $Jit_ver ]] &&
+			Print "LuaJIT-$ver <--current" ||
+			Print "LuaJIT-$ver"
+	done
+}
+
 Do_current_lua(){
 	Get_lua_ver
-	[[ $Lua_ver ]] && Print "lua-$Lua_ver"
+	[[ $Lua_ver ]] && Print "lua-$Lua_ver" ||
+		 Print "No lua versions installed"
 }
 
 Do_current_rocks(){
 	Get_rocks_ver
-	[[ $Rocks_ver ]] && Print "luarocks-$Rocks_ver"
+	[[ $Rocks_ver ]] && Print "luarocks-$Rocks_ver" ||
+		 Print "No luarocks versions installed"
 }
 
 Do_current_jit(){
 	Get_jit_ver
-	[[ $Jit_ver ]] && Print "LuaJIT-$Jit_ver"
+	[[ $Jit_ver ]] && Print "LuaJIT-$Jit_ver" ||
+		 Print "No LuaJIT versions installed"
 }
 
 Do_all_lua(){
@@ -372,47 +416,6 @@ Do_uninstall_jit(){ # $1:ver
 		Exec_command "cd '$Bin'"
 		Exec_command "rm luajit"
 	fi
-}
-
-Do_list_lua(){
-	local installed_vers=$(ls -1 $Lua)
-	[[ -z $installed_vers ]] && Print "No lua versions installed" &&
-		return
-	Get_lua_ver
-	for ver in $installed_vers
-	do
-		[[ $ver = $Lua_ver ]] &&
-			Print "lua-$ver <--current" ||
-			Print "lua-$ver"
-	done
-}
-
-Do_list_rocks(){
-	local installed_vers=$(ls -1 $Rocks)
-	[[ -z $installed_vers ]] && Print "No luarocks versions installed" &&
-		return
-	Get_rocks_ver
-	for ver in $installed_vers
-	do
-		local rocks=${ver%_*}
-		local lua=${ver#*_}
-		[[ $rocks = $Rocks_ver && $lua = $Lua_rver ]] &&
-			Print "luarocks-$rocks (lua version: $lua) <--current" ||
-			Print "luarocks-$rocks (lua version: $lua)"
-	done
-}
-
-Do_list_jit(){
-	local installed_vers=$(ls -1 $Jit)
-	[[ -z $installed_vers ]] && Print "No LuaJIT versions installed" &&
-		return
-	Get_jit_ver
-	for ver in $installed_vers
-	do
-		[[ $ver = $Jit_ver ]] &&
-			Print "LuaJIT-$ver <--current" ||
-			Print "LuaJIT-$ver"
-	done
 }
 
 # Main
