@@ -91,7 +91,7 @@ Get_arch(){
 Get_lua_ver(){
 	local ver=$(readlink "$Bin/lua")
 	ver=${ver#$Lua/} Lua_ver=${ver%/bin/lua}
-	Lua_sver=${Lua_ver:0: -2}
+	Lua_sver=${Lua_ver:0:3}
 }
 
 Get_rocks_ver(){

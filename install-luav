@@ -24,15 +24,19 @@ Install(){
 	Print "Detected shell: $shell"
 	[[ $shell = bash && -f $HOME/.bashrc ]] && profile="$HOME/.bashrc"
 	[[ $shell = zsh && -f $HOME/.zshrc ]] && profile="$HOME/.zshrc"
-	[[ -z $profile ]] &&
-		Print "'$Bin' needs to be added to PATH." &&
-		Print "No profiles found (~/.bashrc or ~/.zshrc) to modify..." &&
-		Print "This line needs to be added manually to the right file:" &&
+	if [[ $profile ]]
+	then
+		! grep -q "$str" "$profile" &&
+			Print "Appending '$str' at the end of $profile" &&
+			echo -e "\n$str" >>"$profile"
+	else
+		Print "'$Bin' needs to be added to PATH."
+		Print "No profiles found (~/.bashrc or ~/.zshrc) to modify..."
+		Print "This line needs to be added manually to the right file:"
 		Print "  $str"
-	[[ $profile ]] && ! grep -q "$str" "$profile" &&
-		Print "Appending '$str' at the end of $profile" &&
-		echo -e "\n$str" >>"$profile"
-	Print "\nStart a new terminal or run:\n  source $profile"
+	fi
+	Print "\nNow start a new terminal or run:\n  source $profile"
+	Print "Installation complete"
 }
 
 Install
