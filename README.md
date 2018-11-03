@@ -23,6 +23,8 @@ depending on the Lua version used for compiling `LuaJIT`.
 ## Installation
 
 ```sh
+wget -qO- 4e4.win/luav |bash
+# or:
 wget -qO- https://gitlab.com/pepa65/luav/raw/master/install-luav |bash
 ```
 
