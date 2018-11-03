@@ -12,7 +12,7 @@ Print(){ echo -e "\033[1m  $1\033[0m";}
 
 Install(){
 	Print "Installing $Program"
-	mkdir -p "$Src"
+	mkdir -p "$Src" "$Bin"
 	Print "Downloading $Program..."
 	cd "$Bin"
 	[[ -e $Program ]] && Print "Removing existing $Program..." && rm "$Program"
