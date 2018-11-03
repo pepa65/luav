@@ -1,16 +1,17 @@
 #!/bin/bash
 
-# install-luavm - Install luavm
+# install-luav - Install Lua version manager
 
-Program='luavm'
-Rawrepo='https://gitlab.com/pepa65/luavm/raw/master'
-Luavm="$HOME/.luavm"  # Source code dir
-Src="$Luavm/src"  # Source code dir
-Bin="$Luavm/bin"  # Binary/link dir
+Program='luav'
+Rawrepo='https://gitlab.com/pepa65/luav/raw/master'
+Luav="$HOME/.luav"  # Source code dir
+Src="$Luav/src"  # Source code dir
+Bin="$Luav/bin"  # Binary/link dir
 
 Print(){ echo -e "\033[1m  $1\033[0m";}
 
 Install(){
+	Print "Installing $Program"
 	mkdir -p "$Src"
 	Print "Downloading $Program..."
 	cd "$Bin"
@@ -18,7 +19,7 @@ Install(){
 	wget "$Rawrepo/$Program"
 	chmod 775 "$Program"
 
-	# Add luavm to path
+	# Add luav to path
 	local str="export PATH=\"$Bin:\$PATH\"" shell=$(basename $SHELL) profile=
 	Print "Detected shell: $shell"
 	[[ $shell = bash && -f $HOME/.bashrc ]] && profile="$HOME/.bashrc"
@@ -34,6 +35,4 @@ Install(){
 	Print "\nStart a new terminal or run:\n  source $profile"
 }
 
-Print "Installing $Program"
 Install
-Print "Install successful"

@@ -1,4 +1,4 @@
-# luavm - Lua Version Manager
+# luav - Lua version manager
 
 **Command line tool to manage and switch between different versions of `lua`,
 `LuaJIT` and `luarocks`.**
@@ -23,40 +23,43 @@ depending on the Lua version used for compiling `LuaJIT`.
 ## Installation
 
 ```sh
-wget -qO- https://gitlab.com/pepa65/luavm/raw/master/install-luavm |bash
+wget -qO- https://gitlab.com/pepa65/luav/raw/master/install-luav |bash
 ```
 
 ## Usage
 ### Sample usage:
 
 ```sh
-luavm install lua-5.3.5         # Installs latest lua-5.3
-luavm install lua-5.2.4         # Installs latest lua-5.2
-luavm install lua-5.1.5         # Installs latest lua-5.1
-luavm install lua-5.0.3         # Installs latest lua-5.0
-luavm install luarocks-3.0.4    # Installs latest version
-luavm install luajit-2.0.3      # Installs latest luajit version
+luav install lua-5.3.5         # Installs latest lua-5.3
+luav install lua-5.2.4         # Installs latest lua-5.2
+luav install lua-5.1.5         # Installs latest lua-5.1
+luav install luarocks-3.0.4    # Installs latest version
+luav install luajit-2.0.3      # Installs latest luajit version
 ```
 
 ### Complete usage:
 
 ```sh
-Usage:  luavm list|current[-lua|luajit|luarocks] | version | help |
-          install|use|uninstall lua|luajit|luarocks-<version>
+Usage:  luav <command> [<component>[-<version>]]
+            component:  lua | [lua]jit | [lua]rocks
+            version:    n.n.n (n=0..9)
+            command:    all | list | current [<component>]
+                        install | use | uninstall <component>-<version>
+                        version | help
 
-  luavm install|use|uninstall <component>-<version>
-      Install/Use/Uninstall lua/luarocks/luajit-<version>
-  luavm list|current [lua|luarocks|luajit]
-      List Installed/Current versions
-  luavm version    - Display luavm version
-  luavm [help]     - Display this message
+  luav install | use | uninstall <component>-<version>
+    - Install / Use / Uninstall the given version of lua/luarocks/luajit
+  luav all | list | current  [lua | [lua]rocks | [lua]jit]
+    - List Known / Installed / Current versions of lua/luarocks/luajit
+  luav version    - Display luav version
+  luav [help]     - Display this help text
 ```
 
 ## Contribution
 
-Feel free to [file issues](https://gitlab.com/pepa65/luavm/issues).
+Please [report any issues](https://gitlab.com/pepa65/luav/issues).
 
 ## License
 
-luavm is licensed under the [MIT license](http://dhaval.mit-license.org/),
-relicenced under GPL3+ (c) 2018 pepa65@passchier.net
+luavm/luaver is licensed under: [MIT license](http://dhaval.mit-license.org/),
+luav relicensed under GPL3+ (c) 2018 pepa65@passchier.net
