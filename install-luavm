@@ -30,8 +30,8 @@ Install(){
 		Print "  $str"
 	[[ $profile ]] && ! grep -q "$str" "$profile" &&
 		Print "Appending '$str' at the end of $profile" &&
-		echo -e "\n$str" >>"$profile" &&
-		Print "Start a new terminal or run:\nsource $profile"
+		echo -e "\n$str" >>"$profile"
+	Print "\nStart a new terminal or run:\n  source $profile"
 }
 
 Print "Installing $Program"
