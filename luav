@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # luav - Lua version manager
-# Required: coreutils(cat type cd rm) wget tar libreadline-dev
+# Required: coreutils(cat type cd rm ln) wget tar find grep libreadline-dev
 # Optional: liblua5.3-dev liblua5.2-dev liblua5.1-dev [compiling LuaJIT]
 
 Ver=0.14 Arch=linux Luav="$HOME/.luav"  # Directory tree for luav
@@ -257,6 +257,8 @@ Get_more_jit(){ # $1:download
 Do_install_lua(){ # $1:version
 	local name="lua-$1"
 	Print "Installing $name"
+	find /usr/include |grep -q readline/readline.h ||
+		Error "Missing 'readline/readline.h', install package libreadline-dev"
 	Exec_command "cd '$Src'"
 	Download_unpack "$name" "$name.tar.gz" "$urllua"
 	Get_arch
