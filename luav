@@ -4,7 +4,7 @@
 # Required: coreutils(cat type cd rm) wget tar libreadline-dev
 # Optional: liblua5.3-dev liblua5.2-dev liblua5.1-dev [compiling LuaJIT]
 
-Ver=0.13 Arch=linux Luav="$HOME/.luav"  # Directory tree for luav
+Ver=0.14 Arch=linux Luav="$HOME/.luav"  # Directory tree for luav
 
 Usage(){
 	cat <<-EOT
@@ -19,7 +19,7 @@ Usage(){
 		    - Install / Use / Uninstall the given version of lua/luarocks/luajit
 		  luav all | list | current  [lua | [lua]rocks | [lua]jit]
 		    - List Known / Installed / Current versions of lua/luarocks/luajit
-			luav version    - Display luav version
+		  luav version    - Display luav version
 		  luav [help]     - Display this help text
 		
 		Examples:
@@ -453,7 +453,7 @@ case $1 in
 			Do_$1_jit
 			Do_$1_rocks
 		fi ;;
-	version) Print "luav-$Ver" ;;
+	version) echo "luav-$Ver" ;;
 	''|help) Usage ;;
 	*) Usage
 		Error "Unknown first argument: $1"
