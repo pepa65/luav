@@ -46,7 +46,7 @@ luav install luajit-2.0.3      # Installs latest luajit version
 ```sh
 Usage:  luav <command> [<component>[-<version>]]
             <component>:  lua | [lua]jit | [lua]rocks
-            <version>:    n.n.n (n=0..9)
+            <version>:    n.n[.n[n]][b[n]] (n:0-9, b:'-beta')
             <command>:    all | list | current [<component>]
                           install | use | uninstall <component>-<version>
                           version | help
