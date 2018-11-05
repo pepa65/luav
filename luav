@@ -13,8 +13,8 @@ Ver=0.14 Arch=linux Luav_dir="$HOME/.luav"  # Directory tree for luav
 Usage(){
 	cat <<-EOT
 		luav-$Ver - Lua version manager
-		Usage:  luav <command> [<component>[-<version>]]
-		            <component>:  lua | [lua]jit | [lua]rocks
+		Usage:  luav [<command> [<component>[-<version>]]]
+		            <component>:  lua | [lua]rocks | [lua]jit
 		            <version>:    n.n[.n[n]][b[n]] (n:0-9, b:'-beta')
 		            <command>:    all | list | current [<component>]
 		                          install | use | uninstall <component>-<version>
@@ -24,7 +24,8 @@ Usage(){
 		    luav all | list | current  [lua | [lua]rocks | [lua]jit]
 		      - List Known / Installed / Current versions of lua/luarocks/luajit
 		    luav version    - Display luav version
-		    luav [help]     - Display this help text
+		    luav help       - Display this help text
+		    luav            - Interactive shell
 		
 		Examples:
 		    luav install lua-5.3.5         Install latest version of lua 5.3
@@ -240,7 +241,7 @@ Do_install_rocks(){ # $1:version
 	Exec_command "cd '$Src_dir'"
 	mkdir -p "$Inc_dir"
 	[[ ! -e "$Inc_dir/lua$Lua_sver" ]] &&
-		! ln -s "/usr/include/lua$Lua_sver" "$Inc_dir/" &&
+		! ln -sf "/usr/include/lua$Lua_sver" "$Inc_dir/" &&
 		Error "Can't link the header files of Lua $Lua_sver"
 	Download_unpack "$name" "$name.tar.gz" "$Urlrocks"
 	Exec_command "cd '$name'"
@@ -362,13 +363,19 @@ Do_uninstall_lua(){ # $1:version
 	fi
 }
 
-Do_uninstall_rocks(){ # $1:version
-	local name="luarocks-$1"
+Do_uninstall_rocks(){ # $1:version (either rocks or rocks_shortlua)
+	local name="luarocks-$1" rver lver
 	Get_lua_ver
 	Get_rocks_ver
-	Print "Uninstalling $name for lua $Lua_sver"
-	Uninstall "$name" "$Rocks_dir" "$1_$Lua_sver"
-	if [[ $1 = $Rocks_ver ]]
+	if [[ $1 == *_* ]]
+	then
+		rver=${1%_*} lver=${1##*_}
+	else
+		rver=$1 lver=$Lua_sver
+	fi
+	Print "Uninstalling $name for lua $lver"
+	Uninstall "$name" "$Rocks_dir" "${rver}_$lver"
+	if [[ $rver = $Rocks_ver ]]
 	then
 		Exec_command "cd '$Bin_dir'"
 		Exec_command "rm luarocks"
@@ -426,11 +433,65 @@ case $1 in
 		then Do_$1_$c
 		else
 			Do_$1_lua
-			Do_$1_jit
 			Do_$1_rocks
+			Do_$1_jit
 		fi ;;
 	version) echo "luav-$Ver" ;;
-	help|'') Usage ;;
+	help) Usage ;;
+	'') Do_list_lua; Do_list_rocks; Do_list_jit
+		PS3='luav> '
+		select c in install use uninstall list all current version help exit
+		do case $c in
+				exit) exit ;;
+				version) echo "luav-$Ver" ;;
+				help) Usage ;;
+				current) Do_current_lua; Do_current_rocks; Do_current_jit ;;
+				all) Do_all_lua; Do_all_rocks; Do_all_jit ;;
+				list|'') Do_list_lua; Do_list_rocks; Do_list_jit ;;
+				*) select s in lua luarocks luajit back exit
+					do break; done
+					case $s in
+						exit) exit ;;
+						back) continue ;;
+						lua) if [[ $c = uninstall ]]
+							then
+								select v in $(ls -1 $Lua_dir) back exit
+								do [[ $v = back ]] && continue 2
+									[[ $v = exit ]] && exit
+									Do_uninstall_lua $v; continue 2
+								done
+							else
+								Do_all_lua
+								select v in $Luav
+								do Do_${c}_lua $v; continue 2; done
+							fi ;;
+						luarocks) if [[ $c = uninstall ]]
+							then
+								select v in $(ls -1 $Rocks_dir) back exit
+								do [[ $v = back ]] && continue 2
+									[[ $v = exit ]] && exit
+									Do_uninstall_rocks $v; continue 2
+								done
+							else
+								Do_all_rocks
+								select v in $Rocksv
+								do Do_${c}_rocks $v; continue 2; done
+							fi ;;
+						luajit) if [[ $c = uninstall ]]
+							then
+								select v in $(ls -1 $Jit_dir)
+								do [[ $v = back ]] && continue 2
+									[[ $v = exit ]] && exit
+									 Do_uninstall_jit $v; continue 2
+								done
+							else
+								Do_all_jit
+								select v in $Jitv
+								do Do_${c}_jit $v; continue 2; done
+							fi
+					esac
+			esac
+		done ;;
 	*) Usage
 		Error "Unknown first argument: $1"
 esac
