@@ -171,47 +171,47 @@ Do_current_jit(){
 
 Do_all_lua(){
 	local f
-	if [[ -z $Luav ]]
+	if [[ -z $Lua_a ]]
 	then
 		Exists wget
 		f=($(wget -qO- "$Urllua" |grep -o 'lua-[.0-9]*tar\.gz' |sort -u))
 		f=(${f[@]#lua-})
-		Luav=${f[@]%\.tar\.gz}
+		Lua_a=${f[@]%\.tar\.gz}
 	fi
 	Print "All known lua verion:"
-	fmt <<<${Luav// /  }
+	fmt <<<${Lua_a// /  }
 }
 
 Do_all_rocks(){
 	local f
-	if [[ -z $Rocksv ]]
+	if [[ -z $Rocks_a ]]
 	then
 		Exists wget
 		f=($(wget -qO- "$Urlrocks" |grep -o 'luarocks-[.0-9]*tar\.gz' |sort -u))
-		f=(${f[@]#luarocks-}) Rocksv=${f[@]%\.tar\.gz}
+		f=(${f[@]#luarocks-}) Rocks_a=${f[@]%\.tar\.gz}
 	fi
 	Print "All known luarocks versions:"
-	fmt <<<${Rocksv// /  }
+	fmt <<<${Rocks_a// /  }
 }
 
 Do_all_jit(){
 	local f
-	if [[ -z $Jitv ]]
+	if [[ -z $Jit_a ]]
 	then
 		Exists wget
 		f=($(wget -qO- "$Urljit.html" |grep -o 'LuaJIT[^ ]*\.tar\.gz$' |sort -u))
 		f=(${f[@]#LuaJIT-})
-		Jitv=${f[@]%\.tar\.gz}
+		Jit_a=${f[@]%\.tar\.gz}
 	fi
 	Print "All known LuaJIT versions:"
-	fmt <<<${Jitv// /  }
+	fmt <<<${Jit_a// /  }
 }
 
 Do_install_lua(){ # $1:version
 	local name="lua-$1"
 	((${1:0:1}${1:2:1}<51)) && Error "$name too old to autobuild"
-	[[ $Luav ]] || Do_all_lua >/dev/null
-	[[ ' '$Luav' ' == *' '$1' '* ]] || Error "$name is not available"
+	[[ $Lua_a ]] || Do_all_lua >/dev/null
+	[[ ' '$Lua_a' ' == *' '$1' '* ]] || Error "$name is not available"
 	Print "Installing $name"
 	! find /usr/include |grep -q readline/readline.h &&
 		if type -p apt &>/dev/null
@@ -232,8 +232,8 @@ Do_install_lua(){ # $1:version
 Do_install_rocks(){ # $1:version
 	local name="luarocks-$1"
 	((${1:0:1}${1:2:1}<22)) && Error "$name too old to autobuild"
-	[[ $Rocksv ]] || Do_all_rocks >/dev/null
-	[[ ' '$Rocksv' ' == *' '$1' '* ]] || Error "$name not available"
+	[[ $Rocks_a ]] || Do_all_rocks >/dev/null
+	[[ ' '$Rocks_a' ' == *' '$1' '* ]] || Error "$name not available"
 	Get_lua_ver
 	[[ $Lua_ver ]] || Error "No lua version set, install lua first"
 	Print "Installing $name for lua $Lua_sver"
@@ -261,8 +261,8 @@ Do_install_rocks(){ # $1:version
 Do_install_jit(){ # $1:version
 	local name="LuaJIT-$1"
 	((${1:0:1}<2)) && Error "$name too old to autobuild"
-	[[ $Jitv ]] || Do_all_jit >/dev/null
-	[[ ' '$Jitv' ' == *' '$1' '* ]] || Error "$name is not available"
+	[[ $Jit_a ]] || Do_all_jit >/dev/null
+	[[ ' '$Jit_a' ' == *' '$1' '* ]] || Error "$name is not available"
 	Print "Installing $name"
 	Exec_command "cd '$Src_dir'"
 	Download_unpack "$name" "$name.tar.gz" "$Urljit"
@@ -394,8 +394,7 @@ Do_uninstall_jit(){ # $1:version
 }
 
 # Globals
-Arch= Lua_ver= Lua_sver= Lua_rver= Jit_ver= Rocks_ver=
-Luav=() Jitv=() Rocksv=()
+Arch= Lua_ver= Lua_sver= Lua_rver= Jit_ver= Rocks_ver= Lua_a= Jit_a= Rocks_a=
 Red=$'\e[31m' Bold=$'\e[1m' Normal=$'\e[0m'
 
 # Download urls
@@ -439,12 +438,12 @@ case $1 in
 		fi ;;
 	version) echo "luav-$Ver" ;;
 	help) Usage ;;
-	'') c=go
+	'') PS3='luav> '
 		Do_list_lua; Do_list_rocks; Do_list_jit
 		while :
 		do
-			PS3='luav> '
 			Print "Command:"
+			c=exit
 			select c in install use uninstall list all current version help exit
 			do break; done
 			case $c in
@@ -454,37 +453,42 @@ case $1 in
 				help) Usage ;;
 				current) Do_current_lua; Do_current_rocks; Do_current_jit ;;
 				all) Do_all_lua; Do_all_rocks; Do_all_jit ;;
-				list|'') Do_list_lua; Do_list_rocks; Do_list_jit ;;
-				*) Print "Command: $c  Package:"
-					select p in Lua luarocks LuaJIT back exit
-					do break; done
-					sel=
-					case $p in
-						exit) exit ;;
-						back) continue ;;
-						Lua) s=lua
-							[[ ! $c = uninstall ]] &&
-								Do_all_lua >/dev/null && sel=$Luav ||
-								sel=$(ls -1 $Lua_dir) ;;
-						luarocks) s=rocks
-							[[ ! $c = uninstall ]] &&
-								Do_all_rocks >/dev/null && sel=$Rocksv ||
-								sel=$(ls -1 $Rocks_dir) ;;
-						LuaJIT) s=jit
-							[[ ! $c = uninstall ]] &&
-								Do_all_jit >/dev/null && sel=$Jitv ||
-								sel=$(ls -1 $Jit_dir) ;;
-						*) continue
-					esac
-					while :
-					do Print "Command: $c  Package: $p  Version:"
-						select v in $sel back exit
+				list) Do_lst_lua; Do_list_rocks; Do_list_jit ;;
+				*) while :
+					do
+						Print "Command: $c  Package:"
+						p=back
+						select p in Lua luarocks LuaJIT back exit
 						do break; done
-						[[ -z $v ]] && continue
-						[[ $v = exit ]] && exit
-						[[ $v = back ]] && break
-						Do_${c}_$s $v
-						break
+						vers=
+						case $p in
+							exit) exit ;;
+							back) break ;;
+							Lua) s=lua
+								[[ ! $c = uninstall ]] &&
+									Do_all_lua >/dev/null && vers=$Lua_a ||
+									vers=$(ls -1 $Lua_dir) ;;
+							luarocks) s=rocks
+								[[ ! $c = uninstall ]] &&
+									Do_all_rocks >/dev/null && vers=$Rocks_a ||
+									vers=$(ls -1 $Rocks_dir) ;;
+							LuaJIT) s=jit
+								[[ ! $c = uninstall ]] &&
+									Do_all_jit >/dev/null && vers=$Jit_a ||
+									vers=$(ls -1 $Jit_dir) ;;
+							*) continue
+						esac
+						while :
+						do Print "Command: $c  Package: $p  Version:"
+							v=back
+							select v in $vers back exit
+							do break; done
+							[[ -z $v ]] && continue
+							[[ $v = exit ]] && exit
+							[[ $v = back ]] && break
+							Do_${c}_$s $v
+							break
+						done
 					done
 				esac
 		done ;;
