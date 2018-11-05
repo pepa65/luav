@@ -449,11 +449,11 @@ case $1 in
 			case $c in
 				'') continue ;;
 				exit) exit ;;
-				version) echo "luav-$Ver" ;;
+				version) Print "luav-$Ver\n" ;;
 				help) Usage ;;
 				current) Do_current_lua; Do_current_rocks; Do_current_jit ;;
 				all) Do_all_lua; Do_all_rocks; Do_all_jit ;;
-				list) Do_lst_lua; Do_list_rocks; Do_list_jit ;;
+				list) Do_list_lua; Do_list_rocks; Do_list_jit ;;
 				*) while :
 					do
 						Print "Command: $c  Package:"
