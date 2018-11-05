@@ -8,7 +8,7 @@
 #   find libreadline-dev [install lua]
 #   liblua5.3-dev liblua5.2-dev liblua5.1-dev [install luajit]
 
-Ver=0.14 Arch=linux Luav_dir="$HOME/.luav"  # Directory tree for luav
+Ver=0.15 Luav_dir="$HOME/.luav"  # Directory tree for luav
 
 Usage(){
 	cat <<-EOT
@@ -33,12 +33,11 @@ Usage(){
 		    luav install lua-5.1.5         Install latest version of lua 5.1
 		    luav install luarocks-3.0.4    Install latest luarocks version
 		    luav install luajit-2.0.5      Install latest luajit version
-		Directory tree for luav: $Luav_dir
 	EOT
 }
 
-Error(){ echo -e "\e[1m\e[31m$1\n\e[0m" 1>&2; exit 1;}
-Print(){ echo -e "\e[1m  $1\e[0m";}
+Error(){ echo -e "$Bold$Red$1$Normal" 1>&2; exit 1;}
+Print(){ echo -e "$Bold$1$Normal";}
 Exists(){ type "$1" &>/dev/null || Error "'$1' must be usable";}
 Exec_command(){ eval $1; (($?)) && Error "ABORT: error in executing '$1'";}
 
@@ -394,6 +393,11 @@ Do_uninstall_jit(){ # $1:version
 	fi
 }
 
+# Globals
+Arch= Lua_ver= Lua_sver= Lua_rver= Jit_ver= Rocks_ver=
+Luav=() Jitv=() Rocksv=()
+Red=$'\e[31m' Bold=$'\e[1m' Normal=$'\e[0m'
+
 # Download urls
 Urllua='http://www.lua.org/ftp'
 Urljit='http://luajit.org/download'
@@ -407,9 +411,6 @@ Rocks_dir="$Luav_dir/luarocks"  # Build dir for luarocks
 Jit_dir="$Luav_dir/luajit"  # Build dir for luajit
 Inc_dir="$Luav_dir/include"  # Inc_dirlude dir
 mkdir -p "$Src_dir" "$Lua_dir" "$Jit_dir" "$Rocks_dir" "$Bin_dir"
-
-# Version globals
-Lua_ver= Lua_sver= Lua_rver= Jit_ver= Rocks_ver= Luav=() Jitv=() Rocksv=()
 
 case $1 in
 	install|use|uninstall) [[ $2 ]] ||
@@ -438,59 +439,54 @@ case $1 in
 		fi ;;
 	version) echo "luav-$Ver" ;;
 	help) Usage ;;
-	'') Do_list_lua; Do_list_rocks; Do_list_jit
-		PS3='luav> '
-		select c in install use uninstall list all current version help exit
-		do case $c in
+	'') c=go
+		Do_list_lua; Do_list_rocks; Do_list_jit
+		while :
+		do
+			PS3='luav> '
+			Print "Command:"
+			select c in install use uninstall list all current version help exit
+			do break; done
+			case $c in
+				'') continue ;;
 				exit) exit ;;
 				version) echo "luav-$Ver" ;;
 				help) Usage ;;
 				current) Do_current_lua; Do_current_rocks; Do_current_jit ;;
 				all) Do_all_lua; Do_all_rocks; Do_all_jit ;;
 				list|'') Do_list_lua; Do_list_rocks; Do_list_jit ;;
-				*) select s in lua luarocks luajit back exit
+				*) Print "Command: $c  Package:"
+					select p in Lua luarocks LuaJIT back exit
 					do break; done
-					case $s in
+					sel=
+					case $p in
 						exit) exit ;;
 						back) continue ;;
-						lua) if [[ $c = uninstall ]]
-							then
-								select v in $(ls -1 $Lua_dir) back exit
-								do [[ $v = back ]] && continue 2
-									[[ $v = exit ]] && exit
-									Do_uninstall_lua $v; continue 2
-								done
-							else
-								Do_all_lua
-								select v in $Luav
-								do Do_${c}_lua $v; continue 2; done
-							fi ;;
-						luarocks) if [[ $c = uninstall ]]
-							then
-								select v in $(ls -1 $Rocks_dir) back exit
-								do [[ $v = back ]] && continue 2
-									[[ $v = exit ]] && exit
-									Do_uninstall_rocks $v; continue 2
-								done
-							else
-								Do_all_rocks
-								select v in $Rocksv
-								do Do_${c}_rocks $v; continue 2; done
-							fi ;;
-						luajit) if [[ $c = uninstall ]]
-							then
-								select v in $(ls -1 $Jit_dir)
-								do [[ $v = back ]] && continue 2
-									[[ $v = exit ]] && exit
-									 Do_uninstall_jit $v; continue 2
-								done
-							else
-								Do_all_jit
-								select v in $Jitv
-								do Do_${c}_jit $v; continue 2; done
-							fi
+						Lua) s=lua
+							[[ ! $c = uninstall ]] &&
+								Do_all_lua >/dev/null && sel=$Luav ||
+								sel=$(ls -1 $Lua_dir) ;;
+						luarocks) s=rocks
+							[[ ! $c = uninstall ]] &&
+								Do_all_rocks >/dev/null && sel=$Rocksv ||
+								sel=$(ls -1 $Rocks_dir) ;;
+						LuaJIT) s=jit
+							[[ ! $c = uninstall ]] &&
+								Do_all_jit >/dev/null && sel=$Jitv ||
+								sel=$(ls -1 $Jit_dir) ;;
+						*) continue
 					esac
-			esac
+					while :
+					do Print "Command: $c  Package: $p  Version:"
+						select v in $sel back exit
+						do break; done
+						[[ -z $v ]] && continue
+						[[ $v = exit ]] && exit
+						[[ $v = back ]] && break
+						Do_${c}_$s $v
+						break
+					done
+				esac
 		done ;;
 	*) Usage
 		Error "Unknown first argument: $1"
