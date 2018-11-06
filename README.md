@@ -2,7 +2,7 @@
 
 **Command line tool to manage and switch between different versions of Lua,
 LuaJIT and luarocks.**
-### Version 0.15
+### Version 0.16
 
 ## Features
 
