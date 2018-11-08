@@ -39,19 +39,19 @@ Usage(){
 Error(){ echo -e "$Bold$Red$1$Normal" 1>&2; exit 1;}
 Print(){ echo -e "$Bold$1$Normal";}
 Exists(){ type "$1" &>/dev/null || Error "'$1' must be usable";}
-Exec_command(){ eval $1; (($?)) && Error "ABORT: error in executing '$1'";}
+Exec_command(){ "$@" || Error "ABORT: error $? in executing '$@'";}
 
 Download(){ # $1:url
 	Print "Downloading from $1"
 	Exists wget
-	Exec_command "wget -q '$1'"
+	Exec_command wget -q "$1"
 	Print "Download successful"
 }
 
 Unpack(){ # $1:archive
 	Print "Unpacking $1"
 	Exists tar
-	Exec_command "tar xf '$1'"
+	Exec_command tar xf "$1"
 	Print "Unpack successful"
 }
 
@@ -60,7 +60,7 @@ Download_unpack(){ # $1:name $2:archive $3:url
 	then
 		read -rn1 -p "'$1' already downloaded, download anew? [y/N] "
 		[[ $REPLY ]] && echo
-		[[ $REPLY =~ [yY] ]] && Exec_command "rm -r '$1'"
+		[[ $REPLY =~ [yY] ]] && Exec_command rm -rf "$1"
 	fi
 	if [[ ! -e $1 ]]
 	then # Downloading the archive only if it does not exist
@@ -68,15 +68,15 @@ Download_unpack(){ # $1:name $2:archive $3:url
 		Download "$3/$2"
 		Print "Extracting $2"
 		Unpack "$2"
-		Exec_command "rm '$2'"
+		Exec_command rm "$2"
 	fi
 }
 
 Uninstall(){ # $1:name $2:path $3:dir
 	Print "Uninstalling $1"
-	Exec_command "cd '$2'"
+	Exec_command cd "$2"
 	[[ -e $3 ]] || Error "$1 not installed"
-	Exec_command "rm -r '$3'"
+	Exec_command rm -r "$3"
 	Print "Successfully uninstalled $1"
 }
 
@@ -256,12 +256,12 @@ Do_install_lua(){ # $1:version $2:use-question
 		then sudo apt install libreadline-dev
 		else Error "Missing 'readline/readline.h', install package libreadline-dev"
 		fi
-	Exec_command "cd '$Src_dir'"
+	Exec_command cd "$Src_dir"
 	Download_unpack "$name" "$name.tar.gz" "$Urllua"
 	Get_arch
-	Exec_command "cd '$name'"
+	Exec_command cd "$name"
 	Print "Compiling $name"
-	Exec_command "make $Arch install INSTALL_TOP=$Lua_dir/$1/"
+	Exec_command make $Arch install INSTALL_TOP=$Lua_dir/$1/
 	[[ $2 ]] && return
 	read -rn1 -p "$name successfully installed. Use this version? [Y/n] "
 	[[ $REPLY ]] && echo
@@ -276,22 +276,22 @@ Do_install_rocks(){ # $1:version $2:use-question
 	Get_lua_ver
 	[[ $Lua_ver ]] || Error "No lua version set, install lua first"
 	Print "Installing $name for lua $Lua_sver"
-	Exec_command "cd '$Src_dir'"
+	Exec_command cd "$Src_dir"
 	mkdir -p "$Inc_dir"
 	[[ ! -e "$Inc_dir/lua$Lua_sver" ]] &&
 		! ln -sf "/usr/include/lua$Lua_sver" "$Inc_dir/" &&
 		Error "Can't link the header files of Lua $Lua_sver"
 	Download_unpack "$name" "$name.tar.gz" "$Urlrocks"
-	Exec_command "cd '$name'"
+	Exec_command cd "$name"
 	Print "Compiling $name"
-	Exec_command "./configure --prefix=$Rocks_dir/$1_$Lua_sver
-			--with-lua=$Lua_dir/$Lua_ver
-			--with-lua-bin=$Lua_dir/$Lua_ver/bin
-			--with-lua-include=$Lua_dir/$Lua_ver/include
-			--with-lua-lib=$Lua_dir/$Lua_ver/lib
-			--versioned-rocks-dir"
-	Exec_command "make build"
-	Exec_command "make install"
+	Exec_command ./configure --prefix=$Rocks_dir/$1_$Lua_sver \
+			--with-lua=$Lua_dir/$Lua_ver \
+			--with-lua-bin=$Lua_dir/$Lua_ver/bin \
+			--with-lua-include=$Lua_dir/$Lua_ver/include \
+			--with-lua-lib=$Lua_dir/$Lua_ver/lib \
+			--versioned-rocks-dir
+	Exec_command make build
+	Exec_command make install
 	[[ $2 ]] && return
 	read -rn1 -p "$name successfully installed. Use this version? [Y/n] "
 	[[ $REPLY ]] && echo
@@ -304,15 +304,15 @@ Do_install_jit(){ # $1:version $2:use-question
 	[[ $Jit_a ]] || Do_all_jit >/dev/null
 	[[ ' '$Jit_a' ' == *' '$1' '* ]] || Error "$name is not available"
 	Print "Installing $name"
-	Exec_command "cd '$Src_dir'"
+	Exec_command cd "$Src_dir"
 	Download_unpack "$name" "$name.tar.gz" "$Urljit"
-	Exec_command "cd '$name'"
+	Exec_command cd "$name"
 	Print "Compiling $name (needs package liblua${1:2:3}-dev!)"
 	Get_arch
-	Exec_command "make PREFIX='$Jit_dir/$1'"
-	Exec_command "make install PREFIX='$Jit_dir/$1'"
-	Exec_command "cd '$Jit_dir/$1/bin'"
-	[[ -f luajit ]] || Exec_command "ln -sf 'luajit-$1' '$Jit_dir/$1/bin/luajit'"
+	Exec_command make PREFIX="$Jit_dir/$1"
+	Exec_command make install PREFIX="$Jit_dir/$1"
+	Exec_command cd "$Jit_dir/$1/bin"
+	[[ -f luajit ]] || Exec_command ln -sf "luajit-$1" "$Jit_dir/$1/bin/luajit"
 	[[ $2 ]] && return
 	read -rn1 -p "$name successfully installed. Use this version? [Y/n] "
 	[[ $REPLY ]] && echo
@@ -322,7 +322,7 @@ Do_install_jit(){ # $1:version $2:use-question
 Do_use_lua(){ # $1:version
 	local name="lua-$1"
 	Print "Starting to use $name"
-	Exec_command "cd $Lua_dir"
+	Exec_command cd "$Lua_dir"
 	if [[ ! -e $1 ]]
 	then
 		read -rn1 -p "$name is not installed. Install? [Y/n] "
@@ -331,11 +331,11 @@ Do_use_lua(){ # $1:version
 			return
 		Do_install_lua $1 skip
 	fi
-	Exec_command "cd '$Bin_dir'"
-	[[ -L lua ]] && Exec_command "rm lua"
-	[[ -L luac ]] && Exec_command "rm luac"
-	Exec_command "ln -s '$Lua_dir/$1/bin/lua'"
-	Exec_command "ln -s '$Lua_dir/$1/bin/luac'"
+	Exec_command cd "$Bin_dir"
+	[[ -L lua ]] && Exec_command rm lua
+	[[ -L luac ]] && Exec_command rm luac
+	Exec_command ln -s "$Lua_dir/$1/bin/lua"
+	Exec_command ln -s "$Lua_dir/$1/bin/luac"
 	Print "Successfully using $name now"
 
 	if [[ -L luarocks ]]
@@ -345,8 +345,8 @@ Do_use_lua(){ # $1:version
 		if [[ ! $Lua_sver = $Lua_rver ]]
 		then
 			Print "Current version of luarocks does not match current lua version"
-			Exec_command "rm luarocks"
-			Exec_command "rm luarocks-admin"
+			Exec_command rm luarocks
+			Exec_command rm luarocks-admin
 			Do_use_rocks $Rocks_ver
 		fi
 	fi
@@ -356,7 +356,7 @@ Do_use_rocks(){ # $1:version
 	local name="luarocks-$1"
 	Get_lua_ver
 	Print "Using $name with lua $Lua_sver"
-	Exec_command "cd '$Rocks_dir'"
+	Exec_command cd "$Rocks_dir"
 	if [[ ! -e $1_$Lua_sver ]]
 	then
 		read -rn1 -p "'$name' not installed with lua $Lua_sver. Install? [Y/n] "
@@ -365,18 +365,18 @@ Do_use_rocks(){ # $1:version
 			return
 		Do_install_rocks $1 skip
 	fi
-	Exec_command "cd '$Bin_dir'"
-	[[ -L luarocks ]] && Exec_command "rm luarocks"
-	[[ -L luarocks-admin ]] && Exec_command "rm luarocks-admin"
-	Exec_command "ln -s '$Rocks_dir/$1_$Lua_sver/bin/luarocks'"
-	Exec_command "ln -s '$Rocks_dir/$1_$Lua_sver/bin/luarocks-admin'"
+	Exec_command cd "$Bin_dir"
+	[[ -L luarocks ]] && Exec_command rm luarocks
+	[[ -L luarocks-admin ]] && Exec_command rm luarocks-admin
+	Exec_command ln -s "$Rocks_dir/$1_$Lua_sver/bin/luarocks"
+	Exec_command ln -s "$Rocks_dir/$1_$Lua_sver/bin/luarocks-admin"
 	Print "Successfully using $name now"
 }
 
 Do_use_jit(){ # $1:version
 	local name="LuaJIT-$1"
 	Print "Using $name"
-	Exec_command "cd '$Jit_dir'"
+	Exec_command cd "$Jit_dir"
 	if [[ ! -e $1 ]]
 	then
 		read -rn1 -p "LuaJIT '$name' not installed. Install? [Y/n] "
@@ -385,9 +385,9 @@ Do_use_jit(){ # $1:version
 			return
 		Do_install_jit $1 skip
 	fi
-	Exec_command "cd '$Bin_dir'"
-	[[ -L luajit ]] && Exec_command "rm luajit"
-	Exec_command "ln -s '$Jit_dir/$1/bin/luajit'"
+	Exec_command cd "$Bin_dir"
+	[[ -L luajit ]] && Exec_command rm luajit
+	Exec_command ln -s "$Jit_dir/$1/bin/luajit"
 	Print "Successfully using $name now"
 }
 
@@ -397,9 +397,9 @@ Do_uninstall_lua(){ # $1:version
 	Uninstall "$name" "$Lua_dir" "$Lua_ver"
 	if [[ $1 = $Lua_ver ]]
 	then
-		Exec_command "cd '$Bin_dir'"
-		Exec_command "rm lua"
-		Exec_command "rm luac"
+		Exec_command cd "$Bin_dir"
+		Exec_command rm lua
+		Exec_command rm luac
 	fi
 }
 
@@ -417,9 +417,9 @@ Do_uninstall_rocks(){ # $1:version (either rocks or rocks_shortlua)
 	Uninstall "$name" "$Rocks_dir" "${rver}_$lver"
 	if [[ $rver = $Rocks_ver ]]
 	then
-		Exec_command "cd '$Bin_dir'"
-		Exec_command "rm luarocks"
-		Exec_command "rm luarocks-admin"
+		Exec_command cd "$Bin_dir"
+		Exec_command rm luarocks
+		Exec_command rm luarocks-admin
 	fi
 }
 
@@ -429,8 +429,8 @@ Do_uninstall_jit(){ # $1:version
 	Uninstall "$name" "$Jit_dir" "$1"
 	if [[ $1 = $Jit_ver ]]
 	then
-		Exec_command "cd '$Bin_dir'"
-		Exec_command "rm luajit"
+		Exec_command cd "$Bin_dir"
+		Exec_command rm luajit
 	fi
 }
 
